@@ -347,3 +347,57 @@ html, body { height: 100%; background: var(--bg); color: var(--text); font-famil
 
 /* ── misc ── */
 .spinner { color: var(--dim); }
+
+/* ── login screen ── */
+#app.login-mode {
+  grid-template-rows: 1fr;
+}
+#app.login-mode #topbar,
+#app.login-mode #tabs,
+#app.login-mode #footer { display: none; }
+
+#app.login-mode #content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.login-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.login-logo {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 16px;
+  margin-bottom: 20px;
+}
+
+.login-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--green);
+  letter-spacing: -0.5px;
+  margin-bottom: 12px;
+}
+
+.login-desc {
+  color: var(--dim);
+  font-size: 13px;
+  margin-bottom: 32px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+.login-error {
+  color: var(--red);
+  font-size: 12px;
+  margin-bottom: 16px;
+}
+
+.login-btn { text-decoration: none; }

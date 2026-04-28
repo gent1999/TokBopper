@@ -355,23 +355,58 @@ function switchTab(tab) {
   }
 }
 
+/* ── login screen ── */
+function showLoginScreen(authResult) {
+  document.getElementById('app').classList.add('login-mode');
+
+  let errorMsg = '';
+  if (authResult && authResult !== 'ok') {
+    errorMsg = `<div class="login-error">Authorization failed (${authResult}). Please try again.</div>`;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="login-screen">
+      <img src="/logo.png" alt="TokBopper" class="login-logo" />
+      <div class="login-title">TokBopper<span class="cursor">█</span></div>
+      <p class="login-desc">Connect your TikTok account to start scheduling posts.</p>
+      ${errorMsg}
+      <a href="/auth/login" class="btn login-btn">login with TikTok</a>
+    </div>
+  `;
+}
+
 /* ── boot ── */
 async function init() {
-  // Inject toast element
-  const toast = document.createElement('div');
-  toast.id = 'toast';
-  document.body.appendChild(toast);
+  const toastEl = document.createElement('div');
+  toastEl.id = 'toast';
+  document.body.appendChild(toastEl);
+
+  const params = new URLSearchParams(window.location.search);
+  const authResult = params.get('auth');
+  if (authResult) history.replaceState({}, '', '/');
+
+  const { authenticated } = await api('GET', '/api/auth/status');
+
+  if (!authenticated) {
+    showLoginScreen(authResult);
+    return;
+  }
 
   // Tab clicks
   document.querySelectorAll('.tab').forEach((btn) => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
 
-  // Initial load
+  // Append logout to footer
+  const footer = document.getElementById('footer');
+  if (footer) {
+    footer.innerHTML += '<span class="footer-sep">·</span><a href="/auth/logout">logout</a>';
+  }
+
+  if (authResult === 'ok') toast('TikTok account connected!', 'ok');
+
   await refreshStatus();
   switchTab('ready');
-
-  // Keep status bar fresh
   setInterval(refreshStatus, 30_000);
 }
 

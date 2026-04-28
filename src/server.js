@@ -2,13 +2,19 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
-const { ensureDirs, DIRS } = require('./config');
+const crypto = require('crypto');
+const { URL } = require('url');
+const axios = require('axios');
+const { ensureDirs, DIRS, CLIENT_KEY, CLIENT_SECRET, TOKENS_FILE, saveTokens } = require('./config');
 const { runPost } = require('./poster');
 const { loadSchedule, saveSchedule, loadHashtags, saveHashtags, to12h } = require('./schedule-config');
 const logger = require('./logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const REDIRECT_URI = `http://localhost:${PORT}/auth/callback`;
+
+let pendingState = null;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -31,6 +37,63 @@ function getVideos(dir) {
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+app.get('/api/auth/status', (req, res) => {
+  res.json({ authenticated: fs.existsSync(TOKENS_FILE) });
+});
+
+app.get('/auth/login', (req, res) => {
+  if (!CLIENT_KEY) return res.status(500).send('TIKTOK_CLIENT_KEY not set in .env');
+  pendingState = crypto.randomBytes(16).toString('hex');
+  const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
+  url.searchParams.set('client_key',    CLIENT_KEY);
+  url.searchParams.set('scope',         'video.publish');
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('redirect_uri',  REDIRECT_URI);
+  url.searchParams.set('state',         pendingState);
+  res.redirect(url.toString());
+});
+
+app.get('/auth/callback', async (req, res) => {
+  const { code, state, error } = req.query;
+
+  if (error || state !== pendingState || !code) {
+    pendingState = null;
+    return res.redirect('/?auth=' + (error || 'failed'));
+  }
+
+  pendingState = null;
+
+  try {
+    const tokenRes = await axios.post(
+      'https://open.tiktokapis.com/v2/oauth/token/',
+      new URLSearchParams({
+        client_key:    CLIENT_KEY,
+        client_secret: CLIENT_SECRET,
+        code,
+        grant_type:    'authorization_code',
+        redirect_uri:  REDIRECT_URI,
+      }),
+      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+    );
+
+    const { access_token, refresh_token, expires_in } = tokenRes.data;
+    if (!access_token) throw new Error('No access_token in response: ' + JSON.stringify(tokenRes.data));
+
+    saveTokens({ access_token, refresh_token, expires_at: Date.now() + (expires_in || 86400) * 1000 });
+    res.redirect('/?auth=ok');
+  } catch (err) {
+    logger.error('OAuth callback failed', { message: err.message });
+    res.redirect('/?auth=error');
+  }
+});
+
+app.get('/auth/logout', (req, res) => {
+  if (fs.existsSync(TOKENS_FILE)) fs.unlinkSync(TOKENS_FILE);
+  res.redirect('/');
+});
 
 // ─── API ────────────────────────────────────────────────────────────────────
 
