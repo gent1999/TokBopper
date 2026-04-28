@@ -14,7 +14,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = `http://localhost:${PORT}/auth/callback`;
 
-let pendingState = null;
+let pendingState    = null;
+let pendingVerifier = null;
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -46,13 +47,19 @@ app.get('/api/auth/status', (req, res) => {
 
 app.get('/auth/login', (req, res) => {
   if (!CLIENT_KEY) return res.status(500).send('TIKTOK_CLIENT_KEY not set in .env');
-  pendingState = crypto.randomBytes(16).toString('hex');
+
+  pendingState    = crypto.randomBytes(16).toString('hex');
+  pendingVerifier = crypto.randomBytes(32).toString('base64url');
+  const challenge = crypto.createHash('sha256').update(pendingVerifier).digest('base64url');
+
   const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
-  url.searchParams.set('client_key',    CLIENT_KEY);
-  url.searchParams.set('scope',         'video.publish');
-  url.searchParams.set('response_type', 'code');
-  url.searchParams.set('redirect_uri',  REDIRECT_URI);
-  url.searchParams.set('state',         pendingState);
+  url.searchParams.set('client_key',             CLIENT_KEY);
+  url.searchParams.set('scope',                  'video.publish');
+  url.searchParams.set('response_type',          'code');
+  url.searchParams.set('redirect_uri',           REDIRECT_URI);
+  url.searchParams.set('state',                  pendingState);
+  url.searchParams.set('code_challenge',         challenge);
+  url.searchParams.set('code_challenge_method',  'S256');
   res.redirect(url.toString());
 });
 
@@ -60,11 +67,12 @@ app.get('/auth/callback', async (req, res) => {
   const { code, state, error } = req.query;
 
   if (error || state !== pendingState || !code) {
-    pendingState = null;
+    pendingState = pendingVerifier = null;
     return res.redirect('/?auth=' + (error || 'failed'));
   }
 
-  pendingState = null;
+  const verifier  = pendingVerifier;
+  pendingState = pendingVerifier = null;
 
   try {
     const tokenRes = await axios.post(
@@ -75,6 +83,7 @@ app.get('/auth/callback', async (req, res) => {
         code,
         grant_type:    'authorization_code',
         redirect_uri:  REDIRECT_URI,
+        code_verifier: verifier,
       }),
       { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
     );
