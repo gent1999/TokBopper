@@ -1,0 +1,12 @@
+node_modules/
+.env
+tokens.json
+.claude/
+
+# Video files
+videos/*.mp4
+posted/*.mp4
+failed/*.mp4
+
+# Logs
+logs/*.log

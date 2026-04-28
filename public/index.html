@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TokBopper</title>
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+
+    <header id="topbar">
+      <span class="logo">
+        <img src="/logo.png" alt="TokBopper" class="logo-img" />
+        TokBopper<span class="cursor">█</span>
+      </span>
+      <div id="status-pills">
+        <span class="pill green" id="pill-ready">ready: –</span>
+        <span class="pill blue"  id="pill-posted">posted: –</span>
+        <span class="pill red"   id="pill-failed">failed: –</span>
+        <span class="pill yellow" id="pill-schedule">schedule: –</span>
+      </div>
+    </header>
+
+    <nav id="tabs">
+      <button class="tab active" data-tab="ready">   ready</button>
+      <button class="tab"        data-tab="posted">  posted</button>
+      <button class="tab"        data-tab="failed">  failed</button>
+      <button class="tab"        data-tab="schedule">schedule</button>
+      <button class="tab"        data-tab="logs">    logs</button>
+    </nav>
+
+    <main id="content">
+      <div class="spinner">loading...</div>
+    </main>
+
+    <footer id="footer">
+      <a href="/terms" target="_blank">Terms of Service</a>
+      <span class="footer-sep">·</span>
+      <a href="/privacy" target="_blank">Privacy Policy</a>
+    </footer>
+
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

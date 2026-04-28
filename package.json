@@ -1,0 +1,22 @@
+{
+  "name": "tokbopper",
+  "version": "1.0.0",
+  "description": "TikTok auto-poster using Content Posting API",
+  "main": "src/index.js",
+  "scripts": {
+    "auth": "node src/auth.js",
+    "start": "node src/index.js",
+    "serve": "node src/server.js",
+    "post-now": "node src/post-now.js",
+    "dashboard": "node src/cli.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.0",
+    "chalk": "^4.1.2",
+    "cli-table3": "^0.6.5",
+    "dotenv": "^16.4.0",
+    "express": "^5.2.1",
+    "inquirer": "^8.2.7",
+    "node-cron": "^4.2.1"
+  }
+}
