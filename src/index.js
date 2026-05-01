@@ -37,7 +37,7 @@ function registerSchedule() {
 }
 
 registerSchedule();
-logger.info('TokBopper scheduler running. Press Ctrl+C to stop.');
+logger.info('BopperX scheduler running. Press Ctrl+C to stop.');
 
 // Hot-reload cron jobs when schedule.json is saved from the dashboard
 fs.watch(SCHEDULE_FILE, () => {

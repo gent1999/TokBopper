@@ -47,5 +47,5 @@ module.exports = {
   saveTokens,
   CLIENT_KEY: process.env.TIKTOK_CLIENT_KEY,
   CLIENT_SECRET: process.env.TIKTOK_CLIENT_SECRET,
-  PRIVACY_LEVEL: process.env.TIKTOK_PRIVACY_LEVEL || 'PUBLIC_TO_EVERYONE',
+  PRIVACY_LEVEL: process.env.TIKTOK_PRIVACY_LEVEL || 'SELF_ONLY',
 };

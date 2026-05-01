@@ -43,7 +43,7 @@ function printHeader() {
   const times  = loadSchedule().map(to12h).join('  |  ');
 
   console.log(chalk.cyan('┌─────────────────────────────────────────┐'));
-  console.log(chalk.cyan('│') + chalk.bold.white('           TokBopper Dashboard           ') + chalk.cyan('│'));
+  console.log(chalk.cyan('│') + chalk.bold.white('           BopperX Dashboard           ') + chalk.cyan('│'));
   console.log(chalk.cyan('└─────────────────────────────────────────┘'));
   console.log();
 

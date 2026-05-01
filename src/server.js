@@ -49,17 +49,19 @@ app.get('/auth/login', (req, res) => {
   if (!CLIENT_KEY) return res.status(500).send('TIKTOK_CLIENT_KEY not set in .env');
 
   pendingState    = crypto.randomBytes(16).toString('hex');
-  pendingVerifier = crypto.randomBytes(32).toString('base64url');
-  const challenge = crypto.createHash('sha256').update(pendingVerifier).digest('base64url');
+  // TikTok requires verifier chars from [A-Za-z0-9-._~], challenge = hex(sha256(verifier))
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+  pendingVerifier = Array.from(crypto.randomBytes(128)).map(b => chars[b % chars.length]).join('');
+  const challenge = crypto.createHash('sha256').update(pendingVerifier).digest('hex');
 
   const url = new URL('https://www.tiktok.com/v2/auth/authorize/');
-  url.searchParams.set('client_key',             CLIENT_KEY);
-  url.searchParams.set('scope',                  'video.publish');
-  url.searchParams.set('response_type',          'code');
-  url.searchParams.set('redirect_uri',           REDIRECT_URI);
-  url.searchParams.set('state',                  pendingState);
-  url.searchParams.set('code_challenge',         challenge);
-  url.searchParams.set('code_challenge_method',  'S256');
+  url.searchParams.set('client_key',            CLIENT_KEY);
+  url.searchParams.set('scope',                 'video.publish');
+  url.searchParams.set('response_type',         'code');
+  url.searchParams.set('redirect_uri',          REDIRECT_URI);
+  url.searchParams.set('state',                 pendingState);
+  url.searchParams.set('code_challenge',        challenge);
+  url.searchParams.set('code_challenge_method', 'S256');
   res.redirect(url.toString());
 });
 
@@ -94,8 +96,9 @@ app.get('/auth/callback', async (req, res) => {
     saveTokens({ access_token, refresh_token, expires_at: Date.now() + (expires_in || 86400) * 1000 });
     res.redirect('/?auth=ok');
   } catch (err) {
-    logger.error('OAuth callback failed', { message: err.message });
-    res.redirect('/?auth=error');
+    const detail = err.response?.data ? JSON.stringify(err.response.data) : err.message;
+    logger.error('OAuth callback failed: ' + detail);
+    res.redirect('/?auth=error&detail=' + encodeURIComponent(detail));
   }
 });
 
@@ -183,5 +186,5 @@ app.get('/api/logs/stream', (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`TokBopper dashboard → http://localhost:${PORT}`);
+  console.log(`BopperX dashboard → http://localhost:${PORT}`);
 });

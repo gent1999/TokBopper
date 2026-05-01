@@ -37,6 +37,7 @@ async function runPost() {
 
   logger.info(`Posting: ${filename}`);
   logger.info(`Caption: "${caption}"`);
+  logger.info(`Privacy: ${PRIVACY_LEVEL}`);
 
   try {
     const result = await postVideo(videoPath, caption, PRIVACY_LEVEL);

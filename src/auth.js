@@ -110,7 +110,7 @@ const server = http.createServer(async (req, res) => {
     console.log('    npm run serve   — open the web dashboard\n');
 
     send(
-      'TokBopper authorized!',
+      'BopperX authorized!',
       'Tokens saved. You can close this tab and return to your terminal.'
     );
   } catch (err) {

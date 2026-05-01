@@ -356,18 +356,18 @@ function switchTab(tab) {
 }
 
 /* ── login screen ── */
-function showLoginScreen(authResult) {
+function showLoginScreen(authResult, authDetail) {
   document.getElementById('app').classList.add('login-mode');
 
   let errorMsg = '';
   if (authResult && authResult !== 'ok') {
-    errorMsg = `<div class="login-error">Authorization failed (${authResult}). Please try again.</div>`;
+    errorMsg = `<div class="login-error">Authorization failed: ${authDetail || authResult}</div>`;
   }
 
   document.getElementById('content').innerHTML = `
     <div class="login-screen">
-      <img src="/logo.png" alt="TokBopper" class="login-logo" />
-      <div class="login-title">TokBopper<span class="cursor">█</span></div>
+      <img src="/logo.png" alt="BopperX" class="login-logo" />
+      <div class="login-title">BopperX<span class="cursor">█</span></div>
       <p class="login-desc">Connect your TikTok account to start scheduling posts.</p>
       ${errorMsg}
       <a href="/auth/login" class="btn login-btn">login with TikTok</a>
@@ -383,12 +383,13 @@ async function init() {
 
   const params = new URLSearchParams(window.location.search);
   const authResult = params.get('auth');
+  const authDetail = params.get('detail');
   if (authResult) history.replaceState({}, '', '/');
 
   const { authenticated } = await api('GET', '/api/auth/status');
 
   if (!authenticated) {
-    showLoginScreen(authResult);
+    showLoginScreen(authResult, authDetail);
     return;
   }
 

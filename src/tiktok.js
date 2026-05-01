@@ -6,8 +6,8 @@ const logger = require('./logger');
 
 const BASE_URL = 'https://open.tiktokapis.com/v2';
 
-// TikTok requires chunks between 5 MB–64 MB (last chunk can be smaller)
-const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB
+const MIN_CHUNK = 5  * 1024 * 1024;  // 5 MB
+const MAX_CHUNK = 64 * 1024 * 1024;  // 64 MB
 
 async function refreshAccessToken() {
   const tokens = loadTokens();
@@ -86,14 +86,14 @@ async function initVideoUpload(accessToken, { title, videoSize, chunkSize, total
   return data; // { publish_id, upload_url }
 }
 
-async function uploadChunks(uploadUrl, videoPath, videoSize, chunkSize) {
-  const totalChunks = Math.ceil(videoSize / chunkSize);
+async function uploadChunks(uploadUrl, videoPath, videoSize, chunkSize, totalChunks) {
   const fd = fs.openSync(videoPath, 'r');
 
   try {
     for (let i = 0; i < totalChunks; i++) {
       const start = i * chunkSize;
-      const end = Math.min(start + chunkSize, videoSize) - 1;
+      // Last chunk absorbs all remaining bytes (can exceed chunkSize, up to 128 MB)
+      const end = i === totalChunks - 1 ? videoSize - 1 : start + chunkSize - 1;
       const length = end - start + 1;
       const buffer = Buffer.alloc(length);
 
@@ -148,9 +148,18 @@ async function postVideo(videoPath, caption, privacyLevel) {
   const accessToken = await getAccessToken();
   const videoSize = fs.statSync(videoPath).size;
 
-  // For small files (< CHUNK_SIZE), use a single chunk equal to file size
-  const chunkSize = Math.min(CHUNK_SIZE, videoSize);
-  const totalChunks = Math.ceil(videoSize / chunkSize);
+  // TikTok chunk rules:
+  //   chunk_size must be 5–64 MB (or equal to video_size for files under 64 MB)
+  //   total_chunk_count = floor(video_size / chunk_size), minimum 1
+  //   Last chunk absorbs the remainder and may exceed chunk_size (up to 128 MB)
+  let chunkSize, totalChunks;
+  if (videoSize <= MAX_CHUNK) {
+    chunkSize   = videoSize;
+    totalChunks = 1;
+  } else {
+    chunkSize   = 10 * 1024 * 1024; // 10 MB per chunk
+    totalChunks = Math.floor(videoSize / chunkSize);
+  }
 
   const mb = (videoSize / 1024 / 1024).toFixed(1);
   logger.info(`Initializing upload: "${path.basename(videoPath)}" (${mb} MB, ${totalChunks} chunk${totalChunks > 1 ? 's' : ''})`);
@@ -165,7 +174,7 @@ async function postVideo(videoPath, caption, privacyLevel) {
 
   logger.info(`Upload initialized. publish_id: ${publish_id}`);
 
-  await uploadChunks(upload_url, videoPath, videoSize, chunkSize);
+  await uploadChunks(upload_url, videoPath, videoSize, chunkSize, totalChunks);
   logger.info('All chunks uploaded. Waiting for TikTok to process...');
 
   const result = await waitForPublish(accessToken, publish_id);
